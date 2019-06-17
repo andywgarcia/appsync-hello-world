@@ -1,0 +1,93 @@
+service: appsync-hello-world
+#app: your-app-name
+#tenant: your-tenant-name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  stage: ${opt:stage, "dev"}
+  region: ${opt:region, "us-west-2"}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:ListBucket"
+        # You can put CloudFormation syntax in here.  No one will judge you.
+        # Remember, this all gets translated to CloudFormation.
+      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket"} ] ] }
+    - Effect: "Allow"
+      Action:
+        - "s3:PutObject"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - "Ref" : "ServerlessDeploymentBucket"
+            - "/*"
+
+custom:
+  appSync:
+    name:  appsync-hello-world
+    # apiKey # only required for update-appsync/delete-appsync
+    authenticationType: API_KEY
+    # logConfig:
+    #   loggingRoleArn: { Fn::GetAtt: [AppSyncLoggingServiceRole, Arn] } # Where AppSyncLoggingServiceRole is a role with CloudWatch Logs write access
+    #   level: ERROR # Logging Level: NONE | ERROR | ALL
+    # mappingTemplatesLocation: # defaults to mapping-templates
+    mappingTemplates:
+      - dataSource: hellolambda
+        type: Query # type name in schema (e.g. Query, Mutation, Subscription)
+        field: Hello
+        request: hello-world/request.vtl # request mapping template name
+        response: hello-world/response.vtl # response mapping template name
+      # - ${file({fileLocation}.yml)} # link to a file with arrays of mapping templates
+    # schema: # schema file or array of files to merge, defaults to schema.graphql
+    dataSources:
+      # - type: AMAZON_DYNAMODB
+      #   name: # data source name
+      #   description: # DynamoDB Table Description
+      #   config:
+      #     tableName: { Ref: MyTable } # Where MyTable is a dynamodb table defined in Resources
+      #     serviceRoleArn: { Fn::GetAtt: [AppSyncDynamoDBServiceRole, Arn] } # Where AppSyncDynamoDBServiceRole is an IAM role defined in Resources
+      #     iamRoleStatements: # custom IAM Role statements for this DataSource. Ignored if `serviceRoleArn` is present. Auto-generated if both `serviceRoleArn` and `iamRoleStatements` are omitted
+      #       - Effect: "Allow"
+      #         Action:
+      #           - "dynamodb:GetItem"
+      #         Resource:
+      #           - "arn:aws:dynamodb:{REGION}:{ACCOUNT_ID}:myTable"
+      #           - "arn:aws:dynamodb:{REGION}:{ACCOUNT_ID}:myTable/*"
+
+      #     region: # Overwrite default region for this data source
+      - type: AWS_LAMBDA
+        name: hellolambda
+        description: 'Lambda DataSource'
+        config:
+          functionName: hello # The function name in your serverless.yml. Ignored if lambdaFunctionArn is provided.
+          # serviceRoleArn: { Fn::GetAtt: [AppSyncLambdaServiceRole, Arn] } # Where AppSyncLambdaServiceRole is an IAM role defined in Resources
+          # iamRoleStatements: # custom IAM Role statements for this DataSource. Ignored if `serviceRoleArn` is present. Auto-generated if both `serviceRoleArn` and `iamRoleStatements` are omitted
+          #   - Effect: "Allow"
+          #     Action:
+          #       - "lambda:invokeFunction"
+          #     Resource:
+          #       - "arn:aws:lambda:{REGION}:{ACCOUNT_ID}:myFunction"
+          #       - "arn:aws:lambda:{REGION}:{ACCOUNT_ID}:myFunction:*"
+      # - type: HTTP
+      #   name: # data source name
+      #   description: 'Http endpoint'
+      #   config:
+      #     endpoint: # required # "https://{DOMAIN}/{PATH}"
+      # - ${file({dataSources}.yml)} # link to a file with an array or object of datasources
+    # substitutions: # allows to pass variables from here to velocity templates
+    #   # ${exampleVar1} will be replaced with given value in all mapping templates
+    #   exampleVar1: "${self:service.name}"
+    #   exampleVar2: {'Fn::ImportValue': 'Some-external-stuff'}
+
+functions:
+  hello:
+    handler: handler.hello
+
+plugins:
+  - serverless-appsync-plugin
