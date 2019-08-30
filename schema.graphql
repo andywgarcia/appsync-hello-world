@@ -1,11 +1,65 @@
-type Query {
-  Hello: Hello!
-}
+# type LambdaEventArgs {
+#   empty: String
+# }
+
+# type LambdaEvent {
+#   result: String
+#   args: LambdaEventArgs
+# }
 
 type Hello {
   message: String!
+  # event: LambdaEvent
+}
+
+# type EmployeeRole {
+#   name: String!
+# }
+
+# type EmployeeRoles {
+#   roles: [EmployeeRoles]
+# }
+
+type Employee {
+  name: String
+  id: ID!
+  # role: EmployeeRole!
+  role: String!
+}
+
+input PutEmployeeInput {
+  name: String!
+  # role: EmployeeRole!
+  role: String!
+}
+
+# type Employees {
+#   employees: [Employee]
+# }
+
+type DynamoDBResponse {
+  items: [Employee]
+  scannedCount: Int!,
+  nextToken: String
+}
+
+type Query {
+  Hello: Hello!
+  listEmployees: DynamoDBResponse
+  getEmployee(id: ID): Employee 
+}
+
+type Mutation {
+  putEmployee(input: PutEmployeeInput): Employee
+}
+
+type Subscription {
+  newEmployee: Employee
+  @aws_subscribe(mutations: ["putEmployee"])
 }
 
 schema {
   query: Query
+  mutation: Mutation
+  subscription: Subscription
 }

@@ -1,0 +1,29 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch GraphQL Playground",
+            "program": "${workspaceFolder}/node_modules/.bin/serverless",
+            "args": [
+                "graphql-playground",
+                "--apiKey",
+                "ecd7uvj7k5fnpk3pq5pr6mdubi"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Local GraphQL Server",
+            "program": "${workspaceFolder}/node_modules/.bin/serverless",
+            "args": [
+                "appsync-offline",
+                "start"
+            ]
+        }
+    ]
+}

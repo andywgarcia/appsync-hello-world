@@ -17,7 +17,11 @@ provider:
         - "s3:ListBucket"
         # You can put CloudFormation syntax in here.  No one will judge you.
         # Remember, this all gets translated to CloudFormation.
-      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket"} ] ] }
+      Resource:
+        {
+          "Fn::Join":
+            ["", ["arn:aws:s3:::", { "Ref": "ServerlessDeploymentBucket" }]],
+        }
     - Effect: "Allow"
       Action:
         - "s3:PutObject"
@@ -25,12 +29,12 @@ provider:
         Fn::Join:
           - ""
           - - "arn:aws:s3:::"
-            - "Ref" : "ServerlessDeploymentBucket"
+            - "Ref": "ServerlessDeploymentBucket"
             - "/*"
 
 custom:
   appSync:
-    name:  appsync-hello-world
+    name: appsync-hello-world
     # apiKey # only required for update-appsync/delete-appsync
     authenticationType: API_KEY
     # logConfig:
@@ -43,27 +47,39 @@ custom:
         field: Hello
         request: hello-world/request.vtl # request mapping template name
         response: hello-world/response.vtl # response mapping template name
+      - dataSource: employees
+        type: Query
+        field: listEmployees
+        request: employees/listEmployees/request.vtl
+        response: employees/response.vtl
+      - dataSource: employees
+        type: Mutation
+        field: putEmployee
+        request: employees/putEmployee/request.vtl
+        response: employees/response.vtl
+      - dataSource: employees
+        type: Query
+        field: getEmployee
+        request: employees/getEmployee/request.vtl
+        response: employees/response.vtl
+      - dataSource: employees
+        type: Subscription
+        field: newEmployee
+        request: employee/subscriptions/newEmployee/request.vtl
+        response: employees/response.vtl
+
       # - ${file({fileLocation}.yml)} # link to a file with arrays of mapping templates
     # schema: # schema file or array of files to merge, defaults to schema.graphql
     dataSources:
-      # - type: AMAZON_DYNAMODB
-      #   name: # data source name
-      #   description: # DynamoDB Table Description
-      #   config:
-      #     tableName: { Ref: MyTable } # Where MyTable is a dynamodb table defined in Resources
-      #     serviceRoleArn: { Fn::GetAtt: [AppSyncDynamoDBServiceRole, Arn] } # Where AppSyncDynamoDBServiceRole is an IAM role defined in Resources
-      #     iamRoleStatements: # custom IAM Role statements for this DataSource. Ignored if `serviceRoleArn` is present. Auto-generated if both `serviceRoleArn` and `iamRoleStatements` are omitted
-      #       - Effect: "Allow"
-      #         Action:
-      #           - "dynamodb:GetItem"
-      #         Resource:
-      #           - "arn:aws:dynamodb:{REGION}:{ACCOUNT_ID}:myTable"
-      #           - "arn:aws:dynamodb:{REGION}:{ACCOUNT_ID}:myTable/*"
-
-      #     region: # Overwrite default region for this data source
+      - type: AMAZON_DYNAMODB
+        name: employees
+        description: Contains information regarding employees
+        config:
+          tableName: { Ref: "employeesTable" }
+          serviceRoleArn: some-arn
       - type: AWS_LAMBDA
         name: hellolambda
-        description: 'Lambda DataSource'
+        description: "Lambda DataSource"
         config:
           functionName: hello # The function name in your serverless.yml. Ignored if lambdaFunctionArn is provided.
           # serviceRoleArn: { Fn::GetAtt: [AppSyncLambdaServiceRole, Arn] } # Where AppSyncLambdaServiceRole is an IAM role defined in Resources
@@ -84,10 +100,36 @@ custom:
     #   # ${exampleVar1} will be replaced with given value in all mapping templates
     #   exampleVar1: "${self:service.name}"
     #   exampleVar2: {'Fn::ImportValue': 'Some-external-stuff'}
+  appsync-offline:
+    port: 3002
+    dynamodb:
+      server:
+        port: 8000
+        inMemory: false
+  dynamodb:
+    start:
+      migrate: true
 
 functions:
   hello:
     handler: handler.hello
 
+resources:
+  Resources:
+    employeesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: employees
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
 plugins:
   - serverless-appsync-plugin
+  - serverless-appsync-offline
+  - serverless-dynamodb-local
+  - serverless-offline
