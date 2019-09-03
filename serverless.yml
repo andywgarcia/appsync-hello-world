@@ -65,7 +65,7 @@ custom:
       - dataSource: employees
         type: Subscription
         field: newEmployee
-        request: employee/subscriptions/newEmployee/request.vtl
+        request: employees/subscriptions/newEmployee/request.vtl
         response: employees/response.vtl
 
       # - ${file({fileLocation}.yml)} # link to a file with arrays of mapping templates
@@ -76,7 +76,12 @@ custom:
         description: Contains information regarding employees
         config:
           tableName: { Ref: "employeesTable" }
-          serviceRoleArn: some-arn
+          iamRoleStatements: # custom IAM Role statements for this DataSource. Ignored if `serviceRoleArn` is present. Auto-generated if both `serviceRoleArn` and `iamRoleStatements` are omitted
+            - Effect: "Allow"
+              Action:
+                - "dynamodb:*"
+              Resource:
+                - { Fn::GetAtt: [employeesTable, Arn] }
       - type: AWS_LAMBDA
         name: hellolambda
         description: "Lambda DataSource"
